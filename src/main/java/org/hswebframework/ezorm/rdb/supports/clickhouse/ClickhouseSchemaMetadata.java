@@ -4,7 +4,7 @@ import org.hswebframework.ezorm.rdb.codec.EnumValueCodec;
 import org.hswebframework.ezorm.rdb.metadata.RDBSchemaMetadata;
 import org.hswebframework.ezorm.rdb.metadata.RDBTableMetadata;
 import org.hswebframework.ezorm.rdb.operator.CompositeExceptionTranslation;
-import org.hswebframework.ezorm.rdb.operator.builder.fragments.update.DefaultUpdateSqlBuilder;
+
 import org.hswebframework.ezorm.rdb.supports.clickhouse.sqlBuilder.ClickhouseDeleteSqlBuilder;
 import org.hswebframework.ezorm.rdb.supports.clickhouse.sqlBuilder.ClickhouseUpdateSqlBuilder;
 import org.hswebframework.ezorm.rdb.supports.mysql.*;

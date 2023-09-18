@@ -1,7 +1,6 @@
 package org.hswebframework.ezorm.rdb.supports.clickhouse.sqlBuilder;
 
 import lombok.AllArgsConstructor;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.hswebframework.ezorm.core.param.Term;
 import org.hswebframework.ezorm.rdb.executor.SqlRequest;
@@ -10,9 +9,7 @@ import org.hswebframework.ezorm.rdb.metadata.key.ForeignKeyMetadata;
 import org.hswebframework.ezorm.rdb.operator.builder.fragments.*;
 import org.hswebframework.ezorm.rdb.operator.builder.fragments.delete.DeleteSqlBuilder;
 import org.hswebframework.ezorm.rdb.operator.builder.fragments.term.ForeignKeyTermFragmentBuilder;
-
 import org.hswebframework.ezorm.rdb.operator.dml.delete.DeleteOperatorParameter;
-
 
 import java.util.Collections;
 import java.util.LinkedList;

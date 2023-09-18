@@ -7,12 +7,8 @@ import lombok.SneakyThrows;
 import org.hswebframework.ezorm.rdb.metadata.RDBDatabaseMetadata;
 import org.hswebframework.ezorm.rdb.metadata.RDBSchemaMetadata;
 import org.hswebframework.ezorm.rdb.metadata.dialect.Dialect;
+import org.hswebframework.ezorm.rdb.supports.clickhouse.ClickhouseDialect;
 import org.hswebframework.ezorm.rdb.supports.clickhouse.ClickhouseSchemaMetadata;
-import org.hswebframework.ezorm.rdb.supports.h2.H2SchemaMetadata;
-import org.hswebframework.ezorm.rdb.supports.mssql.SqlServerSchemaMetadata;
-import org.hswebframework.ezorm.rdb.supports.mysql.MysqlSchemaMetadata;
-import org.hswebframework.ezorm.rdb.supports.oracle.OracleSchemaMetadata;
-import org.hswebframework.ezorm.rdb.supports.postgres.PostgresqlSchemaMetadata;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Arrays;
@@ -23,7 +19,7 @@ import java.util.Set;
 @Data
 public class EasyormProperties {
 
-    private String defaultSchema="PUBLIC";
+    private String defaultSchema = "PUBLIC";
 
     private String[] schemas = {};
 
@@ -33,7 +29,7 @@ public class EasyormProperties {
 
     private boolean allowTypeAlter = true;
 
-    private DialectEnum dialect = DialectEnum.h2;
+    private DialectEnum dialect = DialectEnum.clickhouse;
 
     private Class<? extends Dialect> dialectType;
 
@@ -76,43 +72,12 @@ public class EasyormProperties {
     @Getter
     @AllArgsConstructor
     public enum DialectEnum {
-        mysql(Dialect.MYSQL, "?") {
-            @Override
-            public RDBSchemaMetadata createSchema(String name) {
-                return new MysqlSchemaMetadata(name);
-            }
-        },
-        mssql(Dialect.MSSQL, "@arg") {
-            @Override
-            public RDBSchemaMetadata createSchema(String name) {
-                return new SqlServerSchemaMetadata(name);
-            }
-        },
-        oracle(Dialect.ORACLE, "?") {
-            @Override
-            public RDBSchemaMetadata createSchema(String name) {
-                return new OracleSchemaMetadata(name);
-            }
-        },
-        postgres(Dialect.POSTGRES, "$") {
-            @Override
-            public RDBSchemaMetadata createSchema(String name) {
-                return new PostgresqlSchemaMetadata(name);
-            }
-        },
-        h2(Dialect.H2, "$") {
-            @Override
-            public RDBSchemaMetadata createSchema(String name) {
-                return new H2SchemaMetadata(name);
-            }
-        },
-        clickhouse(Dialect.CLICKHOUSE,"?"){
+        clickhouse(Dialect.CLICKHOUSE, "?") {
             @Override
             public RDBSchemaMetadata createSchema(String name) {
                 return new ClickhouseSchemaMetadata(name);
             }
-        }
-        ;
+        };
 
         private Dialect dialect;
         private String bindSymbol;
