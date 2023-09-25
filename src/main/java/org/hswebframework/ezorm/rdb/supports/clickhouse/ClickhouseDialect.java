@@ -7,6 +7,7 @@ import org.hswebframework.ezorm.rdb.metadata.dialect.DefaultDialect;
 
 import java.sql.Date;
 import java.sql.JDBCType;
+import java.time.LocalDate;
 
 /**
  * @className ClickhouseDire
@@ -18,11 +19,14 @@ import java.sql.JDBCType;
 public class ClickhouseDialect extends DefaultDialect {
 
     public ClickhouseDialect() {
-        super();
-        addDataTypeBuilder(JDBCType.CHAR, (meta) -> StringUtils.concat("char(", meta.getLength(), ")"));
-        addDataTypeBuilder(JDBCType.VARCHAR, (meta) -> StringUtils.concat("varchar(", meta.getLength(), ")"));
-        addDataTypeBuilder(JDBCType.NVARCHAR, (meta) -> StringUtils.concat("nvarchar(", meta.getLength(), ")"));
 
+
+        addDataTypeBuilder(JDBCType.TINYINT, (meta) -> "Int8");
+        addDataTypeBuilder(JDBCType.BOOLEAN, (meta) -> "Int8");
+
+
+        addDataTypeBuilder(JDBCType.VARCHAR, (meta) -> "string");
+        addDataTypeBuilder(JDBCType.NVARCHAR, (meta) -> StringUtils.concat("nvarchar(", meta.getLength(), ")"));
         addDataTypeBuilder(JDBCType.TIMESTAMP, (meta) -> "datetime(" + Math.min(6, meta.getLength()) + ")");
         addDataTypeBuilder(JDBCType.TIME, (meta) -> "time");
         addDataTypeBuilder(JDBCType.DATE, (meta) -> "date");
@@ -43,7 +47,7 @@ public class ClickhouseDialect extends DefaultDialect {
 
         addDataTypeBuilder("int", (meta) -> "int");
         addDataTypeBuilder("json", meta -> "json");
-
+        registerDataType("date", JdbcDataType.of(JDBCType.VARCHAR, String.class));
         registerDataType("clob", DataType.builder(JdbcDataType.of(JDBCType.CLOB, String.class), c -> "text"));
         registerDataType("longnvarchar", DataType.builder(JdbcDataType.of(JDBCType.LONGNVARCHAR, String.class), c -> "longtext"));
         registerDataType("longvarchar", DataType.builder(JdbcDataType.of(JDBCType.LONGVARCHAR, String.class), c -> "longtext"));

@@ -16,6 +16,8 @@ ClickhouseProperties {
 
     private String url;
 
+    private String database;
+
     private String username;
 
     private String password;

@@ -122,6 +122,11 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
                     } else {
                         value = row.get(property);
                     }
+                    try{
+                        value = Double.valueOf(row.get(property).toString());
+                    }catch (Exception e){
+                        value = row.get(property);
+                    }
                     DefaultColumnWrapperContext<E> context = new DefaultColumnWrapperContext<>(i, property, value, rowInstance);
                     wrapper.wrapColumn(context);
                     rowInstance = context.getRowInstance();
