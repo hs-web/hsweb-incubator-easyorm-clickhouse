@@ -1,2 +1,4 @@
 # Auto Configure
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=org.hswebframework.ezorm.rdb.supports.clickhouse.ClickhouseHelper
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  org.hswebframework.ezorm.rdb.supports.clickhouse.ClickhouseHelper,\
+  org.hswebframework.web.crud.configuration.EasyormConfigurationBeanDefinitionRegistryPostProcessor
