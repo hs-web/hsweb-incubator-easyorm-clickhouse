@@ -4,6 +4,7 @@ import org.hswebframework.ezorm.core.utils.StringUtils;
 import org.hswebframework.ezorm.rdb.metadata.DataType;
 import org.hswebframework.ezorm.rdb.metadata.JdbcDataType;
 import org.hswebframework.ezorm.rdb.metadata.dialect.DefaultDialect;
+import org.joda.time.DateTime;
 
 import java.sql.Date;
 import java.sql.JDBCType;
@@ -28,6 +29,7 @@ public class ClickhouseDialect extends DefaultDialect {
         addDataTypeBuilder(JDBCType.VARCHAR, (meta) -> ClickhouseDataType.STRING);
         registerDataType("uuid", JdbcDataType.of(JDBCType.VARCHAR, String.class));
         registerDataType("timestamp", JdbcDataType.of(JDBCType.BIGINT, Long.class));
+        registerDataType("date", JdbcDataType.of(JDBCType.VARCHAR, String.class));
     }
 
     @Override
