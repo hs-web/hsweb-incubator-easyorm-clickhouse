@@ -8,6 +8,7 @@ import org.hswebframework.ezorm.rdb.metadata.dialect.DefaultDialect;
 import java.sql.Date;
 import java.sql.JDBCType;
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * @className ClickhouseDire
@@ -19,46 +20,14 @@ import java.time.LocalDate;
 public class ClickhouseDialect extends DefaultDialect {
 
     public ClickhouseDialect() {
-
-
-        addDataTypeBuilder(JDBCType.TINYINT, (meta) -> "Int8");
-        addDataTypeBuilder(JDBCType.BOOLEAN, (meta) -> "Int8");
-
-
-        addDataTypeBuilder(JDBCType.VARCHAR, (meta) -> "string");
-        addDataTypeBuilder(JDBCType.NVARCHAR, (meta) -> StringUtils.concat("nvarchar(", meta.getLength(), ")"));
-        addDataTypeBuilder(JDBCType.TIMESTAMP, (meta) -> "datetime(" + Math.min(6, meta.getLength()) + ")");
-        addDataTypeBuilder(JDBCType.TIME, (meta) -> "time");
-        addDataTypeBuilder(JDBCType.DATE, (meta) -> "date");
-        addDataTypeBuilder(JDBCType.CLOB, (meta) -> "text");
-        addDataTypeBuilder(JDBCType.LONGVARBINARY, (meta) -> "blob");
-        addDataTypeBuilder(JDBCType.LONGVARCHAR, (meta) -> "longtext");
-        addDataTypeBuilder(JDBCType.BLOB, (meta) -> "blob");
-        addDataTypeBuilder(JDBCType.BIGINT, (meta) -> "bigint");
-        addDataTypeBuilder(JDBCType.DOUBLE, (meta) -> "double");
-        addDataTypeBuilder(JDBCType.INTEGER, (meta) -> "int");
-        addDataTypeBuilder(JDBCType.NUMERIC, (meta) -> StringUtils.concat("decimal(", meta.getPrecision(32), ",", meta.getScale(), ")"));
-        addDataTypeBuilder(JDBCType.DECIMAL, (meta) -> StringUtils.concat("decimal(", meta.getPrecision(32), ",", meta.getScale(), ")"));
-        addDataTypeBuilder(JDBCType.TINYINT, (meta) -> "tinyint");
-        addDataTypeBuilder(JDBCType.BOOLEAN, (meta) -> "tinyint");
-        addDataTypeBuilder(JDBCType.BIGINT, (meta) -> "bigint");
-        addDataTypeBuilder(JDBCType.OTHER, (meta) -> "other");
-        addDataTypeBuilder(JDBCType.LONGNVARCHAR, (meta) -> "text");
-
-        addDataTypeBuilder("int", (meta) -> "int");
-        addDataTypeBuilder("json", meta -> "json");
-        registerDataType("date", JdbcDataType.of(JDBCType.VARCHAR, String.class));
-        registerDataType("clob", DataType.builder(JdbcDataType.of(JDBCType.CLOB, String.class), c -> "text"));
-        registerDataType("longnvarchar", DataType.builder(JdbcDataType.of(JDBCType.LONGNVARCHAR, String.class), c -> "longtext"));
-        registerDataType("longvarchar", DataType.builder(JdbcDataType.of(JDBCType.LONGVARCHAR, String.class), c -> "longtext"));
-
-        registerDataType("int", JdbcDataType.of(JDBCType.INTEGER, Integer.class));
-        registerDataType("text", JdbcDataType.of(JDBCType.CLOB, String.class));
-        registerDataType("longtext", JdbcDataType.of(JDBCType.LONGVARCHAR, String.class));
-        registerDataType("year", JdbcDataType.of(JDBCType.DATE, Date.class));
-        registerDataType("text", JdbcDataType.of(JDBCType.CLOB, Date.class));
-        registerDataType("datetime", JdbcDataType.of(JDBCType.TIMESTAMP, Date.class));
-
+        addDataTypeBuilder(JDBCType.TINYINT, (meta) -> ClickhouseDataType.INT8);
+        addDataTypeBuilder(JDBCType.BOOLEAN, (meta) -> ClickhouseDataType.INT8);
+        addDataTypeBuilder(JDBCType.SMALLINT, (meta) -> ClickhouseDataType.INT16);
+        addDataTypeBuilder(JDBCType.INTEGER, (meta) -> ClickhouseDataType.INT32);
+        addDataTypeBuilder(JDBCType.BIGINT, (meta) -> ClickhouseDataType.INT64);
+        addDataTypeBuilder(JDBCType.VARCHAR, (meta) -> ClickhouseDataType.STRING);
+        registerDataType("uuid", JdbcDataType.of(JDBCType.VARCHAR, String.class));
+        registerDataType("timestamp", JdbcDataType.of(JDBCType.BIGINT, Long.class));
     }
 
     @Override
