@@ -75,7 +75,7 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
                     } else {
                         sql = request.toNativeSql() + " FORMAT JSON";
                     }
-                    log.info("Execute ==> {}", sql);
+                    log.trace("Execute ==> {}", sql);
                     return client
                             .post()
                             .bodyValue(sql)
