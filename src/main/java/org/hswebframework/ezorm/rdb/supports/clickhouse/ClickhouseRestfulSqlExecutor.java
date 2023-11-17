@@ -82,8 +82,8 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
                             .exchangeToMono(response -> response
                                     .bodyToMono(String.class)
                                     .map(json -> {
-                                        checkExecuteResult(sql, json);
                                         JSONObject result = JSON.parseObject(json);
+                                        checkExecuteResult(sql, json);
 
                                         return result;
                                     }));

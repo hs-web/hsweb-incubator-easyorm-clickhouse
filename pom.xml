@@ -6,7 +6,7 @@
 
     <groupId>org.hswebframework</groupId>
     <artifactId>hsweb-incubator-easyorm-clickhouse</artifactId>
-    <version>1.0-RELEASES</version>
+    <version>1.0-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
