@@ -19,8 +19,11 @@ public abstract class ClickhouseReactiveCrudService<E, K> implements ReactiveCru
 
     @Override
     public ReactiveRepository<E, K> getRepository() {
-        return clickhouseHelper.createRepository(getEntityClass());
+        if (repository == null) {
+            repository = clickhouseHelper.createRepository(getEntityClass());
+        }
+        return repository;
     }
 
-    public abstract Class getEntityClass();
+    public abstract Class<E> getEntityClass();
 }
