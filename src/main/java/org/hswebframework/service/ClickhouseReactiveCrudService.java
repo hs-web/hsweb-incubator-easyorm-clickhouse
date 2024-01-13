@@ -12,18 +12,24 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public abstract class ClickhouseReactiveCrudService<E, K> implements ReactiveCrudService<E, K> {
 
+    private final Class<E> clazz;
+
     private ReactiveRepository<E, K> repository;
 
     @Autowired
     private ClickhouseHelper clickhouseHelper;
 
+    public ClickhouseReactiveCrudService(Class<E> clazz) {
+        this.clazz = clazz;
+    }
+
     @Override
     public ReactiveRepository<E, K> getRepository() {
         if (repository == null) {
-            repository = clickhouseHelper.createRepository(getEntityClass());
+            repository = clickhouseHelper.createRepository(clazz);
         }
         return repository;
     }
 
-    public abstract Class<E> getEntityClass();
+//    public abstract Class<E> getEntityClass();
 }
