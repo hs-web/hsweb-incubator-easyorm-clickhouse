@@ -3,6 +3,7 @@ package org.hswebframework.ezorm.rdb.supports.clickhouse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import lombok.SneakyThrows;
 import org.hswebframework.ezorm.rdb.executor.BatchSqlRequest;
 import org.hswebframework.ezorm.rdb.executor.DefaultColumnWrapperContext;
 import org.hswebframework.ezorm.rdb.executor.SqlRequest;
@@ -16,7 +17,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import java.lang.reflect.Constructor;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -98,36 +100,43 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
 
     protected <E> Flux<E> convertQueryResult(JSONObject result, ResultWrapper<E, ?> wrapper) {
 
-        JSONArray head = result.getJSONArray("meta");
-        JSONArray data = result.getJSONArray("data");
+        Map<String, ClickhouseDataType> columnMeta = new HashMap<String, ClickhouseDataType>();
 
-        if (CollectionUtils.isEmpty(head) || CollectionUtils.isEmpty(data)) {
+        JSONArray resultMeta = result.getJSONArray("meta");
+        JSONArray resultEntityList = result.getJSONArray("data");
+
+        if (CollectionUtils.isEmpty(resultMeta) || CollectionUtils.isEmpty(resultEntityList)) {
             return Flux.empty();
         }
-        List<String> columns = head.stream()
-                .map(v -> ((JSONObject) v).get("name").toString())
-                .collect(Collectors.toList());
+        //把当前列和列类型一一对应
+        for (Object o : resultMeta) {
+            JSONObject e = (JSONObject) o;
+            columnMeta.put(e.getString("name"), ClickhouseDataType.valueOf(e.getString("type").toUpperCase().replace("NULLABLE(", "").replace(")", "")));
+        }
+        //所有的列名
+        ArrayList<String> columns = new ArrayList<>(columnMeta.keySet());
 
         return Flux.create(sink -> {
             wrapper.beforeWrap(() -> columns);
 
-            for (Object rowo : data) {
+            for (Object oneObjectEntity : resultEntityList) {
                 E rowInstance = wrapper.newRowInstance();
-                JSONObject row = (JSONObject) rowo;
-                for (int i = 0; i < columns.size(); i++) {
-                    String property = columns.get(i);
-                    Object value = row.get(property);
-                    if ("total".equals(property)) {
-                        value = Long.valueOf(row.get(property).toString());
-                    } else {
-                        value = row.get(property);
+                JSONObject oneJsonObjectEntity = (JSONObject) oneObjectEntity;
+                for (String columnName : columns) {
+//                    String columnName = columns.get(i);
+                    Object value = oneJsonObjectEntity.get(columnName);
+                    ClickhouseDataType dataType = columnMeta.get(columnName);
+                    try {
+                        Class<?> typeClass = dataType.getJavaType();
+                        Constructor<?> constructor = typeClass.getConstructor(String.class);
+
+                        if (Objects.nonNull(value)) {
+                            value = constructor.newInstance(value.toString());
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    try{
-                        value = Double.valueOf(row.get(property).toString());
-                    }catch (Exception e){
-                        value = row.get(property);
-                    }
-                    DefaultColumnWrapperContext<E> context = new DefaultColumnWrapperContext<>(i, property, value, rowInstance);
+                    DefaultColumnWrapperContext<E> context = new DefaultColumnWrapperContext<>(columns.indexOf(columnName), columnName, value, rowInstance);
                     wrapper.wrapColumn(context);
                     rowInstance = context.getRowInstance();
                 }

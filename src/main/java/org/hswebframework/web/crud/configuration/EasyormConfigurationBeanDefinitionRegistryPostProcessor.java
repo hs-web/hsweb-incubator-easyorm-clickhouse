@@ -31,7 +31,7 @@ public class EasyormConfigurationBeanDefinitionRegistryPostProcessor implements 
         if (StringUtils.isNullOrEmpty(environment.getProperty("easyorm.dialect"))){
             String[] beanNames = ((DefaultListableBeanFactory) registry).getBeanNamesForType(DefaultReactiveRepository.class);
             Arrays.stream(beanNames).forEach(item-> registry.removeBeanDefinition(item));
-            registry.removeBeanDefinition("org.hswebframework.web.crud.configuration.AutoDDLProcessor_1");
+//            registry.removeBeanDefinition("org.hswebframework.web.crud.configuration.AutoDDLProcessor_1");
         }
     }
 
