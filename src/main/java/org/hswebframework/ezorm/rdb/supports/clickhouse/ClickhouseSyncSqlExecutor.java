@@ -3,60 +3,95 @@ package org.hswebframework.ezorm.rdb.supports.clickhouse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import org.hswebframework.ezorm.core.meta.Feature;
 import org.hswebframework.ezorm.rdb.executor.BatchSqlRequest;
 import org.hswebframework.ezorm.rdb.executor.DefaultColumnWrapperContext;
 import org.hswebframework.ezorm.rdb.executor.SqlRequest;
-import org.hswebframework.ezorm.rdb.executor.reactive.ReactiveSqlExecutor;
+import org.hswebframework.ezorm.rdb.executor.SyncSqlExecutor;
 import org.hswebframework.ezorm.rdb.executor.wrapper.ResultWrapper;
+import org.hswebframework.web.crud.configuration.ClickhouseProperties;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * @className ClickhouseRestfulSqlExecutor
+ * @className ClickhouseReactiveSqlExecutor
  * @Description TODO
- * @Author dengpengyu
- * @Date 2023/9/4 14:40
+ * @Author zhong
+ * @Date 2024/1/16 14:55
  * @Vesion 1.0
  */
-public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
-    private Logger log = LoggerFactory.getLogger(ClickhouseRestfulSqlExecutor.class);
-    private WebClient client;
+@AllArgsConstructor(staticName = "of")
+public class ClickhouseSyncSqlExecutor implements SyncSqlExecutor {
+    private Logger log = LoggerFactory.getLogger(ClickhouseSyncSqlExecutor.class);
 
-    public ClickhouseRestfulSqlExecutor(WebClient client) {
-        this.client = client;
+    private  RestTemplate restTemplate;
+
+    private  String url;
+
+    private  HttpHeaders headers;
+
+    public ClickhouseSyncSqlExecutor(ClickhouseProperties clickhouseProperties) {
+        restTemplate =new RestTemplate();
+        this.url=clickhouseProperties.getUrl();
+        headers = new HttpHeaders();
+        headers.add("X-ClickHouse-User", clickhouseProperties.getUsername());
+        headers.add("X-ClickHouse-Key", clickhouseProperties.getPassword());
+    }
+
+    public static Feature of(ClickhouseProperties clickhouseProperties) {
+       return new ClickhouseSyncSqlExecutor(clickhouseProperties);
+    }
+
+
+
+    @Override
+    @SneakyThrows
+    public int update(SqlRequest request) {
+        return   this
+                .doExecute(Mono.just(request))
+                .then(Mono.just(1)).toFuture().get(30, TimeUnit.SECONDS);
+
     }
 
     @Override
-    public Mono<Integer> update(Publisher<SqlRequest> request) {
-        return this
-                .doExecute(request)
-                .then(Mono.just(1));
+    @SneakyThrows
+    public void execute(SqlRequest request) {
+
+         this
+                .doExecute(Mono.just(request))
+                .then()
+                .toFuture().get(30,TimeUnit.SECONDS);
+
     }
 
     @Override
-    public Mono<Void> execute(Publisher<SqlRequest> request) {
-        return this
-                .doExecute(request)
-                .then();
+    @SneakyThrows
+    public <T, R> R select(SqlRequest request, ResultWrapper<T, R> wrapper) {
+         this
+                .doExecute(Mono.just(request))
+                .flatMap(response -> convertQueryResult(response, wrapper))
+         .collectList().toFuture().get(30,TimeUnit.SECONDS);
+
+        return wrapper.getResult();
+
     }
 
-    @Override
-    public <E> Flux<E> select(Publisher<SqlRequest> request, ResultWrapper<E, ?> wrapper) {
-
-        return this
-                .doExecute(request)
-                .flatMap(response -> convertQueryResult(response, wrapper));
-    }
 
     private Flux<JSONObject> doExecute(Publisher<SqlRequest> requests) {
         return Flux
@@ -77,25 +112,14 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
                     } else {
                         sql = request.toNativeSql() + " FORMAT JSON";
                     }
-                    log.trace("Execute ==> {}", sql);
-                    return client
-                            .post()
-                            .bodyValue(sql)
-                            .exchangeToMono(response -> response
-                                    .bodyToMono(String.class)
-                                    .map(json -> {
-                                        JSONObject result = JSON.parseObject(json);
-                                        checkExecuteResult(sql, json);
+                    log.info("Execute ==> {}", sql);
+                    HttpEntity requestEntity = new HttpEntity<>(sql, headers);
+                    ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+                    JSONObject result = JSON.parseObject(responseEntity.getBody());
 
-                                        return result;
-                                    }));
-                });
-    }
-
-    private void checkExecuteResult(String sql, String code) {
-        if (code.startsWith("Code")) {
-            throw new RuntimeException(code);
-        }
+                    return Mono.just(result);
+                })
+              ;
     }
 
     protected <E> Flux<E> convertQueryResult(JSONObject result, ResultWrapper<E, ?> wrapper) {
@@ -123,7 +147,6 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
                 E rowInstance = wrapper.newRowInstance();
                 JSONObject oneJsonObjectEntity = (JSONObject) oneObjectEntity;
                 for (String columnName : columns) {
-//                    String columnName = columns.get(i);
                     Object value = oneJsonObjectEntity.get(columnName);
                     ClickhouseDataType dataType = columnMeta.get(columnName);
                     try {
@@ -150,5 +173,5 @@ public class ClickhouseRestfulSqlExecutor implements ReactiveSqlExecutor {
             wrapper.completedWrap();
             sink.complete();
         });
-    }
-}
+    }}
+

@@ -15,6 +15,7 @@ import org.hswebframework.ezorm.rdb.metadata.RDBTableMetadata;
 import org.hswebframework.ezorm.rdb.metadata.dialect.Dialect;
 import org.hswebframework.ezorm.rdb.operator.DatabaseOperator;
 import org.hswebframework.ezorm.rdb.operator.DefaultDatabaseOperator;
+import org.hswebframework.web.crud.configuration.ClickhouseProperties;
 
 import java.util.function.Supplier;
 
@@ -30,6 +31,8 @@ public interface Helper {
 
     ReactiveSqlExecutor getReactiveSqlExecutor();
 
+    ClickhouseProperties getClickhouseProperties();
+
     default RDBDatabaseMetadata getRDBDatabaseMetadata() {
         RDBDatabaseMetadata metadata = new RDBDatabaseMetadata(getDialect());
 
@@ -37,12 +40,10 @@ public interface Helper {
 
         ReactiveSqlExecutor sqlExecutor = getReactiveSqlExecutor();
 
-//        schema.addFeature((EventListener) (type, context) -> System.out.println(type));
-
         metadata.setCurrentSchema(schema);
         metadata.addSchema(schema);
         metadata.addFeature(sqlExecutor);
-        metadata.addFeature(ReactiveSyncSqlExecutor.of(sqlExecutor));
+        metadata.addFeature(ClickhouseSyncSqlExecutor.of(getClickhouseProperties()));
 
         return metadata;
     }

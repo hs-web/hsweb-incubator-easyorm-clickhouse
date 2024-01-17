@@ -42,6 +42,11 @@ public class ClickhouseHelper implements Helper {
                 .defaultHeader("X-ClickHouse-Key", properties.getPassword())
                 .build();
 
-        return new ClickhouseRestfulSqlExecutor(clickhouseWebClient);
+        return new ClickhouseReactiveSqlExecutor(clickhouseWebClient);
+    }
+
+    @Override
+    public ClickhouseProperties getClickhouseProperties() {
+        return properties;
     }
 }
