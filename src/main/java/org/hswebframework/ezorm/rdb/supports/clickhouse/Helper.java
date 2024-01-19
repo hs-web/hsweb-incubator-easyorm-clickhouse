@@ -85,9 +85,7 @@ public interface Helper {
         wrapper.setMapping(table
                 .<EntityColumnMapping>getFeature(MappingFeatureType.columnPropertyMapping.createFeatureId(clazz))
                 .orElseThrow(NullPointerException::new));
-
-
-        return new DefaultReactiveRepository<>(operator, table, clazz, wrapper);
+        return new ClickhouseReactiveDefaultRepository<>(operator, table, clazz, wrapper);
     }
 
 }
