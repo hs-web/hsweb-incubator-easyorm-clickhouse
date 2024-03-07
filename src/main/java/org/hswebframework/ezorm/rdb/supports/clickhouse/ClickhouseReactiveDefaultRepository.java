@@ -1,0 +1,163 @@
+package org.hswebframework.ezorm.rdb.supports.clickhouse;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.hswebframework.ezorm.rdb.executor.wrapper.ResultWrapper;
+import org.hswebframework.ezorm.rdb.mapping.ReactiveDelete;
+import org.hswebframework.ezorm.rdb.mapping.ReactiveQuery;
+import org.hswebframework.ezorm.rdb.mapping.ReactiveRepository;
+import org.hswebframework.ezorm.rdb.mapping.ReactiveUpdate;
+import org.hswebframework.ezorm.rdb.mapping.defaults.*;
+import org.hswebframework.ezorm.rdb.metadata.RDBTableMetadata;
+import org.hswebframework.ezorm.rdb.operator.DatabaseOperator;
+import org.hswebframework.ezorm.rdb.operator.dml.QueryOperator;
+import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.Collection;
+import java.util.function.Supplier;
+
+/**
+ * @className ClickhouseReactiveDefaultRepository
+ * @Description TODO
+ * @Author zhong
+ * @Date 2024/1/19 9:39
+ * @Vesion 1.0
+ */
+public class ClickhouseReactiveDefaultRepository <E, K> extends ClickhouseDefaultRepository<E> implements ReactiveRepository<E, K> {
+    private final Logger logger;
+
+    public ClickhouseReactiveDefaultRepository(DatabaseOperator operator, String table, Class<E> type, ResultWrapper<E, ?> wrapper) {
+        this(operator,
+                () -> operator
+                        .getMetadata()
+                        .getTable(table)
+                        .orElseThrow(() -> new UnsupportedOperationException("table [" + table + "] doesn't exist")), type, wrapper);
+    }
+
+    public ClickhouseReactiveDefaultRepository(DatabaseOperator operator, RDBTableMetadata table, Class<E> type, ResultWrapper<E, ?> wrapper) {
+        this(operator, () -> table, type, wrapper);
+    }
+
+    public ClickhouseReactiveDefaultRepository(DatabaseOperator operator, Supplier<RDBTableMetadata> table, Class<E> type, ResultWrapper<E, ?> wrapper) {
+        super(operator, table, wrapper);
+        initMapping(type);
+        this.logger = getLogger(type);
+    }
+
+    private static Logger getLogger(Class<?> type) {
+        return org.slf4j.LoggerFactory.getLogger(type);
+    }
+
+    @Override
+    public Mono<E> newInstance() {
+        return Mono.fromSupplier(wrapper::newRowInstance);
+    }
+
+    @Override
+    public Mono<E> findById(Mono<K> primaryKey) {
+        return primaryKey
+                .flatMap(k -> createQuery().where(getIdColumn(), k).fetchOne());
+    }
+
+    @Override
+    public Flux<E> findById(Flux<K> key) {
+        return key.collectList()
+                .filter(CollectionUtils::isNotEmpty)
+                .flatMapMany(idList -> createQuery().where().in(getIdColumn(), idList).fetch());
+    }
+
+    @Override
+    public Mono<Integer> deleteById(Publisher<K> key) {
+        return Flux.from(key)
+                .collectList()
+                .filter(CollectionUtils::isNotEmpty)
+                .flatMap(list -> createDelete().where().in(getIdColumn(), list).execute())
+                .defaultIfEmpty(0);
+    }
+
+    @Override
+    public Mono<Integer> updateById(K id, Mono<E> data) {
+        return data
+                .flatMap(_data -> createUpdate()
+                        .where(getIdColumn(), id)
+                        .set(_data)
+                        .execute());
+    }
+
+    @Override
+    public Mono<SaveResult> save(Publisher<E> data) {
+        return Flux
+                .from(data)
+                .collectList()
+                .filter(CollectionUtils::isNotEmpty)
+                .flatMap(list -> doSave(list).reactive().as(this::setupLogger))
+                .defaultIfEmpty(SaveResult.of(0, 0));
+    }
+
+    @Override
+    public Mono<Integer> insert(Publisher<E> data) {
+        return Flux
+                .from(data)
+                .buffer(100)
+                .as(this::insertBatch);
+    }
+
+    @Override
+    public Mono<Integer> insertBatch(Publisher<? extends Collection<E>> data) {
+        return Flux
+                .from(data)
+                .filter(CollectionUtils::isNotEmpty)
+                .flatMap(e -> doInsert(e).reactive())
+                .reduce(Math::addExact)
+                .defaultIfEmpty(0)
+                .as(this::setupLogger);
+    }
+
+    @Override
+    public ReactiveQuery<E> createQuery() {
+        return new DefaultReactiveQuery<>(getTable()
+                , mapping
+                , operator.dml()
+                , wrapper
+                , logger
+                , getDefaultContextKeyValue());
+    }
+
+    @Override
+    public ReactiveUpdate<E> createUpdate() {
+        return new DefaultReactiveUpdate<>(
+                getTable()
+                , operator.dml().update(getTable().getFullName())
+                , mapping
+                , logger
+                , getDefaultContextKeyValue());
+    }
+
+    @Override
+    public ReactiveDelete createDelete() {
+        return new DefaultReactiveDelete(getTable()
+                , operator.dml().delete(getTable().getFullName())
+                , logger
+                , getDefaultContextKeyValue()
+        );
+    }
+
+
+    private <T> Mono<T> setupLogger(Mono<T> async) {
+        return async.contextWrite(ctx -> ctx.put(Logger.class, logger));
+    }
+
+    private <T> Flux<T> setupLogger(Flux<T> async) {
+        return async.contextWrite(ctx -> ctx.put(Logger.class, logger));
+    }
+
+
+    @Override
+    public QueryOperator nativeQuery() {
+        return operator
+                .dml()
+                .query(getTable());
+    }
+}
